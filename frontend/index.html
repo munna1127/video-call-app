@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Join Call</title>
+</head>
+<body>
+
+<h2>Create Video Call</h2>
+
+<button onclick="createRoom()">Create Room</button>
+
+<script>
+function createRoom() {
+  const roomId = Math.random().toString(36).substring(2, 8);
+  window.location.href = `/room.html?room=${roomId}`;
+}
+</script>
+
+</body>
+</html>
