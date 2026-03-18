@@ -4,32 +4,52 @@
   <title>Video Call</title>
   <style>
     body {
+      margin: 0;
       font-family: Arial;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .box {
+      background: #1e293b;
+      padding: 40px;
+      border-radius: 15px;
       text-align: center;
-      margin-top: 100px;
+      width: 300px;
     }
     input {
+      width: 90%;
       padding: 10px;
-      margin: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
     }
     button {
+      margin-top: 15px;
       padding: 10px 20px;
-      margin: 10px;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
+      background: #3b82f6;
+      color: white;
     }
   </style>
 </head>
 <body>
 
-<h2>🚀 Video Call App</h2>
+<div class="box">
+  <h2>🚀 Video Call</h2>
 
-<button onclick="createRoom()">Create Room</button>
+  <button onclick="createRoom()">Create Room</button>
 
-<br><br>
+  <br><br>
 
-<input type="text" id="roomInput" placeholder="Enter Room ID">
-<br>
-<button onclick="joinRoom()">Join Room</button>
+  <input id="roomInput" placeholder="Enter Room ID">
+  <button onclick="joinRoom()">Join Room</button>
+</div>
 
 <script>
 function createRoom() {
@@ -37,19 +57,14 @@ function createRoom() {
   const link = `${window.location.origin}/room.html?room=${roomId}`;
 
   navigator.clipboard.writeText(link);
-
-  alert("Room link copied 🔥\n" + link);
+  alert("Link copied 🔥");
 
   window.location.href = link;
 }
 
 function joinRoom() {
   const roomId = document.getElementById("roomInput").value;
-
-  if (!roomId) {
-    alert("Enter Room ID ❌");
-    return;
-  }
+  if (!roomId) return alert("Enter Room ID");
 
   window.location.href = `/room.html?room=${roomId}`;
 }
