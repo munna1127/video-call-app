@@ -1,12 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Room</title>
+  <title>Video Call Room</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+    }
+    video {
+      width: 300px;
+      margin: 10px;
+      border: 2px solid black;
+    }
+    button {
+      padding: 10px;
+      margin: 5px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
-<h2>Video Call Room</h2>
+<h2>📞 Video Call Room</h2>
 
+<button onclick="copyLink()">Copy Room Link</button>
 <button onclick="toggleAudio()">Mute/Unmute</button>
 <button onclick="toggleVideo()">Camera On/Off</button>
 
