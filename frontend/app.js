@@ -7,9 +7,7 @@ let localStream;
 let peerConnection;
 
 const servers = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
-  ]
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 };
 
 navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -19,18 +17,14 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
 
     socket.emit("join-room", roomId);
   })
-  .catch(err => {
-    alert("Camera/Mic access denied ❌");
-  });
+  .catch(() => alert("Camera permission denied"));
 
 socket.on("ready", () => {
   createPeer();
 
   peerConnection.createOffer()
-    .then(offer => peerConnection.setLocalDescription(offer))
-    .then(() => {
-      socket.emit("offer", peerConnection.localDescription);
-    });
+    .then(o => peerConnection.setLocalDescription(o))
+    .then(() => socket.emit("offer", peerConnection.localDescription));
 });
 
 socket.on("offer", offer => {
@@ -38,59 +32,50 @@ socket.on("offer", offer => {
 
   peerConnection.setRemoteDescription(offer)
     .then(() => peerConnection.createAnswer())
-    .then(answer => peerConnection.setLocalDescription(answer))
-    .then(() => {
-      socket.emit("answer", peerConnection.localDescription);
-    });
+    .then(a => peerConnection.setLocalDescription(a))
+    .then(() => socket.emit("answer", peerConnection.localDescription));
 });
 
-socket.on("answer", answer => {
-  peerConnection.setRemoteDescription(answer);
+socket.on("answer", ans => {
+  peerConnection.setRemoteDescription(ans);
 });
 
-socket.on("candidate", candidate => {
-  if (candidate) {
-    peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-  }
+socket.on("candidate", c => {
+  if (c) peerConnection.addIceCandidate(new RTCIceCandidate(c));
 });
 
 socket.on("full", () => {
-  alert("Room full ❌");
+  alert("Room full");
   window.location.href = "/";
 });
 
 function createPeer() {
   peerConnection = new RTCPeerConnection(servers);
 
-  localStream.getTracks().forEach(track => {
-    peerConnection.addTrack(track, localStream);
+  localStream.getTracks().forEach(t => {
+    peerConnection.addTrack(t, localStream);
   });
 
-  peerConnection.ontrack = event => {
-    document.getElementById("remoteVideo").srcObject = event.streams[0];
+  peerConnection.ontrack = e => {
+    document.getElementById("remoteVideo").srcObject = e.streams[0];
   };
 
-  peerConnection.onicecandidate = event => {
-    if (event.candidate) {
-      socket.emit("candidate", event.candidate);
-    }
+  peerConnection.onicecandidate = e => {
+    if (e.candidate) socket.emit("candidate", e.candidate);
   };
 }
 
-// 🎤 Controls
 function toggleAudio() {
-  const audioTrack = localStream.getAudioTracks()[0];
-  audioTrack.enabled = !audioTrack.enabled;
+  const t = localStream.getAudioTracks()[0];
+  t.enabled = !t.enabled;
 }
 
-// 📹 Controls
 function toggleVideo() {
-  const videoTrack = localStream.getVideoTracks()[0];
-  videoTrack.enabled = !videoTrack.enabled;
+  const t = localStream.getVideoTracks()[0];
+  t.enabled = !t.enabled;
 }
 
-// 🔗 Copy link
 function copyLink() {
   navigator.clipboard.writeText(window.location.href);
   alert("Link copied 🔥");
-  }
+}
