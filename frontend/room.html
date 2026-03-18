@@ -1,36 +1,65 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Video Call Room</title>
+  <title>Room</title>
   <style>
     body {
+      margin: 0;
+      background: #020617;
+      color: white;
       font-family: Arial;
-      text-align: center;
+    }
+    .topbar {
+      padding: 10px;
+      background: #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .videos {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
     }
     video {
-      width: 300px;
-      margin: 10px;
-      border: 2px solid black;
+      width: 45%;
+      border-radius: 10px;
+      background: black;
+    }
+    .controls {
+      position: fixed;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
     }
     button {
-      padding: 10px;
+      padding: 12px;
       margin: 5px;
+      border-radius: 50%;
+      border: none;
+      background: #334155;
+      color: white;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-<h2>📞 Video Call Room</h2>
+<div class="topbar">
+  <span>📞 Room</span>
+  <button onclick="copyLink()">🔗 Copy</button>
+</div>
 
-<button onclick="copyLink()">Copy Room Link</button>
-<button onclick="toggleAudio()">Mute/Unmute</button>
-<button onclick="toggleVideo()">Camera On/Off</button>
+<div class="videos">
+  <video id="localVideo" autoplay muted playsinline></video>
+  <video id="remoteVideo" autoplay playsinline></video>
+</div>
 
-<br><br>
-
-<video id="localVideo" autoplay muted playsinline></video>
-<video id="remoteVideo" autoplay playsinline></video>
+<div class="controls">
+  <button onclick="toggleAudio()">🎤</button>
+  <button onclick="toggleVideo()">📹</button>
+</div>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="app.js"></script>
