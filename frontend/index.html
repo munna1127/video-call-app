@@ -1,17 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Join Call</title>
+  <title>Video Call</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      margin-top: 100px;
+    }
+    input {
+      padding: 10px;
+      margin: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
-<h2>Create Video Call</h2>
+<h2>🚀 Video Call App</h2>
 
 <button onclick="createRoom()">Create Room</button>
+
+<br><br>
+
+<input type="text" id="roomInput" placeholder="Enter Room ID">
+<br>
+<button onclick="joinRoom()">Join Room</button>
 
 <script>
 function createRoom() {
   const roomId = Math.random().toString(36).substring(2, 8);
+  const link = `${window.location.origin}/room.html?room=${roomId}`;
+
+  navigator.clipboard.writeText(link);
+
+  alert("Room link copied 🔥\n" + link);
+
+  window.location.href = link;
+}
+
+function joinRoom() {
+  const roomId = document.getElementById("roomInput").value;
+
+  if (!roomId) {
+    alert("Enter Room ID ❌");
+    return;
+  }
+
   window.location.href = `/room.html?room=${roomId}`;
 }
 </script>
