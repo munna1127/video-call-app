@@ -1,81 +1,156 @@
+// ==========================
+// 🚀 VIDEO CALL SERVER (PRO)
+// ==========================
+
 const express = require("express");
 const http = require("http");
-const socketIo = require("socket.io");
+const { Server } = require("socket.io");
 const cors = require("cors");
 
+// --------------------------
+// ⚙️ CONFIG
+// --------------------------
+const PORT = process.env.PORT || 3000;
+
+// --------------------------
+// 🚀 INIT APP
+// --------------------------
 const app = express();
 app.use(cors());
 
 const server = http.createServer(app);
 
-// ✅ Render compatible Socket.io
-const io = socketIo(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
 });
 
-let rooms = {};
+// --------------------------
+// 🧠 DATA STRUCTURE
+// --------------------------
 
+// roomId => [socketIds]
+const rooms = {};
+
+// socketId => roomId
+const socketToRoom = {};
+
+// --------------------------
+// 🔌 SOCKET CONNECTION
+// --------------------------
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
 
-  socket.on("join-room", (roomId) => {
-    socket.join(roomId);
+    console.log("User connected:", socket.id);
 
-    if (!rooms[roomId]) rooms[roomId] = [];
-    rooms[roomId].push(socket.id);
+    // ==========================
+    // JOIN ROOM
+    // ==========================
+    socket.on("join-room", (roomId) => {
 
-    console.log(`User ${socket.id} joined room ${roomId}`);
+        console.log(`User ${socket.id} joining room ${roomId}`);
 
-    // ✅ Only allow 2 users
-    if (rooms[roomId].length === 2) {
-      io.to(roomId).emit("ready");
-    }
-
-    // ❌ Extra users block
-    if (rooms[roomId].length > 2) {
-      socket.emit("full");
-      return;
-    }
-
-    // 🔁 signaling events
-    socket.on("offer", (offer) => {
-      socket.to(roomId).emit("offer", offer);
-    });
-
-    socket.on("answer", (answer) => {
-      socket.to(roomId).emit("answer", answer);
-    });
-
-    socket.on("candidate", (candidate) => {
-      socket.to(roomId).emit("candidate", candidate);
-    });
-
-    socket.on("disconnect", () => {
-      console.log("User disconnected:", socket.id);
-
-      if (rooms[roomId]) {
-        rooms[roomId] = rooms[roomId].filter(id => id !== socket.id);
-
-        // ✅ Clean empty room
-        if (rooms[roomId].length === 0) {
-          delete rooms[roomId];
+        // create room if not exists
+        if (!rooms[roomId]) {
+            rooms[roomId] = [];
         }
-      }
+
+        // add user
+        rooms[roomId].push(socket.id);
+        socketToRoom[socket.id] = roomId;
+
+        socket.join(roomId);
+
+        // send existing users to new user
+        const otherUsers = rooms[roomId].filter(id => id !== socket.id);
+        socket.emit("all-users", otherUsers);
+
+        // notify others
+        socket.to(roomId).emit("user-joined", socket.id);
     });
-  });
+
+    // ==========================
+    // OFFER
+    // ==========================
+    socket.on("offer", ({ target, offer }) => {
+        io.to(target).emit("offer", {
+            sender: socket.id,
+            offer
+        });
+    });
+
+    // ==========================
+    // ANSWER
+    // ==========================
+    socket.on("answer", ({ target, answer }) => {
+        io.to(target).emit("answer", {
+            sender: socket.id,
+            answer
+        });
+    });
+
+    // ==========================
+    // ICE CANDIDATE
+    // ==========================
+    socket.on("ice-candidate", ({ target, candidate }) => {
+        io.to(target).emit("ice-candidate", {
+            sender: socket.id,
+            candidate
+        });
+    });
+
+    // ==========================
+    // CHAT MESSAGE
+    // ==========================
+    socket.on("chat-message", (message) => {
+        const roomId = socketToRoom[socket.id];
+        if (roomId) {
+            socket.to(roomId).emit("chat-message", {
+                sender: socket.id,
+                message
+            });
+        }
+    });
+
+    // ==========================
+    // DISCONNECT
+    // ==========================
+    socket.on("disconnect", () => {
+
+        console.log("User disconnected:", socket.id);
+
+        const roomId = socketToRoom[socket.id];
+
+        if (roomId && rooms[roomId]) {
+
+            // remove user
+            rooms[roomId] = rooms[roomId].filter(id => id !== socket.id);
+
+            // notify others
+            socket.to(roomId).emit("user-left", socket.id);
+
+            // delete room if empty
+            if (rooms[roomId].length === 0) {
+                delete rooms[roomId];
+            }
+        }
+
+        delete socketToRoom[socket.id];
+    });
+
 });
 
-// ✅ Health route (Render ke liye helpful)
+// --------------------------
+// 🌐 HEALTH ROUTE
+// --------------------------
 app.get("/", (req, res) => {
-  res.send("Server is running 🚀");
+    res.send("🚀 Video Call Server Running");
 });
 
-// ✅ IMPORTANT: Render dynamic port
-const PORT = process.env.PORT || 3000;
-
+// --------------------------
+// ▶️ START SERVER
+// --------------------------
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`🔥 Server running on port ${PORT}`);
 });
