@@ -1,2 +1,27 @@
+# Node modules
 node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Env files
 .env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python cache (agar use kare)
+__pycache__/
+*.pyc
+
+# Build / temp
+dist/
+build/
+.cache/
+
+# IDE files
+.vscode/
+.idea/
