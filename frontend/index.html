@@ -1,73 +1,138 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Video Call</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #0f172a;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .box {
-      background: #1e293b;
-      padding: 40px;
-      border-radius: 15px;
-      text-align: center;
-      width: 300px;
-    }
-    input {
-      width: 90%;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: none;
-    }
-    button {
-      margin-top: 15px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #3b82f6;
-      color: white;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Call App</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    height: 100vh;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+/* Glass Card */
+.container {
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+}
+
+/* Title */
+h1 {
+    margin-bottom: 20px;
+    font-size: 28px;
+}
+
+/* Input */
+input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+/* Buttons */
+button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: 0.3s;
+}
+
+/* Join */
+.join {
+    background: #3b82f6;
+}
+
+.join:hover {
+    background: #2563eb;
+}
+
+/* Create */
+.create {
+    background: #22c55e;
+}
+
+.create:hover {
+    background: #16a34a;
+}
+
+/* Footer */
+.footer {
+    margin-top: 20px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+</style>
 </head>
+
 <body>
 
-<div class="box">
-  <h2>🚀 Video Call</h2>
+<div class="container">
 
-  <button onclick="createRoom()">Create Room</button>
+    <h1>🚀 Video Call</h1>
 
-  <br><br>
+    <input id="roomInput" placeholder="Enter Room ID">
 
-  <input id="roomInput" placeholder="Enter Room ID">
-  <button onclick="joinRoom()">Join Room</button>
+    <button class="join" onclick="joinRoom()">Join Room</button>
+    <button class="create" onclick="createRoom()">Create New Room</button>
+
+    <div class="footer">
+        Built with WebRTC ⚡
+    </div>
+
 </div>
 
 <script>
-function createRoom() {
-  const roomId = Math.random().toString(36).substring(2, 8);
-  const link = `${window.location.origin}/room.html?room=${roomId}`;
 
-  navigator.clipboard.writeText(link);
-  alert("Link copied 🔥");
-
-  window.location.href = link;
-}
-
+// 🎯 Join existing room
 function joinRoom() {
-  const roomId = document.getElementById("roomInput").value;
-  if (!roomId) return alert("Enter Room ID");
+    const room = document.getElementById("roomInput").value.trim();
 
-  window.location.href = `/room.html?room=${roomId}`;
+    if (!room) {
+        alert("Enter Room ID");
+        return;
+    }
+
+    window.location.href = `room.html?room=${room}`;
 }
+
+// 🚀 Create new room
+function createRoom() {
+    const room = generateRoomId();
+    window.location.href = `room.html?room=${room}`;
+}
+
+// 🔑 Random Room Generator
+function generateRoomId() {
+    return Math.random().toString(36).substring(2, 8);
+}
+
 </script>
 
 </body>
