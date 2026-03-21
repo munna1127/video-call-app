@@ -2,7 +2,7 @@
 // 🚀 VIDEO CALL APP (PRO)
 // ==========================
 
-const socket = io("http://localhost:3000");
+const socket = io("https://video-call-backend-9o06.onrender.com");
 
 const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get("room");
