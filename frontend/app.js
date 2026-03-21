@@ -1,81 +1,260 @@
-const socket = io("https://video-call-backend-9o06.onrender.com");
+// ==========================
+// 🚀 VIDEO CALL APP (PRO)
+// ==========================
 
-const params = new URLSearchParams(window.location.search);
-const roomId = params.get("room");
+const socket = io("http://localhost:3000");
 
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get("room");
+
+document.getElementById("roomId").innerText = roomId;
+
+// --------------------------
+// 🎥 VARIABLES
+// --------------------------
+const peers = {};
 let localStream;
-let peerConnection;
 
-const servers = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+const videoContainer = document.getElementById("videoContainer");
+
+// --------------------------
+// 🔗 WEBRTC CONFIG
+// --------------------------
+const config = {
+    iceServers: [
+        { urls: "stun:stun.l.google.com:19302" }
+    ]
 };
 
-navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-  .then(stream => {
+// --------------------------
+// 🎥 GET USER MEDIA
+// --------------------------
+navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true
+}).then(stream => {
+
     localStream = stream;
-    document.getElementById("localVideo").srcObject = stream;
 
+    // show own video
+    addVideo(stream, "me");
+
+    // join room
     socket.emit("join-room", roomId);
-  })
-  .catch(() => alert("Camera permission denied"));
 
-socket.on("ready", () => {
-  createPeer();
-
-  peerConnection.createOffer()
-    .then(o => peerConnection.setLocalDescription(o))
-    .then(() => socket.emit("offer", peerConnection.localDescription));
+}).catch(err => {
+    alert("Camera/Mic access denied");
 });
 
-socket.on("offer", offer => {
-  createPeer();
+// --------------------------
+// ➕ ADD VIDEO
+// --------------------------
+function addVideo(stream, id) {
+    let video = document.getElementById(id);
 
-  peerConnection.setRemoteDescription(offer)
-    .then(() => peerConnection.createAnswer())
-    .then(a => peerConnection.setLocalDescription(a))
-    .then(() => socket.emit("answer", peerConnection.localDescription));
-});
+    if (!video) {
+        video = document.createElement("video");
+        video.id = id;
+        video.autoplay = true;
+        video.playsInline = true;
+        videoContainer.appendChild(video);
+    }
 
-socket.on("answer", ans => {
-  peerConnection.setRemoteDescription(ans);
-});
-
-socket.on("candidate", c => {
-  if (c) peerConnection.addIceCandidate(new RTCIceCandidate(c));
-});
-
-socket.on("full", () => {
-  alert("Room full");
-  window.location.href = "/";
-});
-
-function createPeer() {
-  peerConnection = new RTCPeerConnection(servers);
-
-  localStream.getTracks().forEach(t => {
-    peerConnection.addTrack(t, localStream);
-  });
-
-  peerConnection.ontrack = e => {
-    document.getElementById("remoteVideo").srcObject = e.streams[0];
-  };
-
-  peerConnection.onicecandidate = e => {
-    if (e.candidate) socket.emit("candidate", e.candidate);
-  };
+    video.srcObject = stream;
 }
 
-function toggleAudio() {
-  const t = localStream.getAudioTracks()[0];
-  t.enabled = !t.enabled;
+// --------------------------
+// 🔗 CREATE PEER
+// --------------------------
+function createPeer(userId) {
+
+    const peer = new RTCPeerConnection(config);
+
+    peers[userId] = peer;
+
+    // send tracks
+    localStream.getTracks().forEach(track => {
+        peer.addTrack(track, localStream);
+    });
+
+    // receive stream
+    peer.ontrack = event => {
+        addVideo(event.streams[0], userId);
+    };
+
+    // ICE
+    peer.onicecandidate = event => {
+        if (event.candidate) {
+            socket.emit("ice-candidate", {
+                target: userId,
+                candidate: event.candidate
+            });
+        }
+    };
+
+    return peer;
 }
 
-function toggleVideo() {
-  const t = localStream.getVideoTracks()[0];
-  t.enabled = !t.enabled;
+// --------------------------
+// 👥 EXISTING USERS
+// --------------------------
+socket.on("all-users", users => {
+
+    users.forEach(userId => {
+
+        const peer = createPeer(userId);
+
+        peer.createOffer()
+            .then(offer => peer.setLocalDescription(offer))
+            .then(() => {
+                socket.emit("offer", {
+                    target: userId,
+                    offer: peer.localDescription
+                });
+            });
+
+    });
+
+});
+
+// --------------------------
+// 👤 NEW USER JOINED
+// --------------------------
+socket.on("user-joined", userId => {
+    createPeer(userId);
+});
+
+// --------------------------
+// 📩 OFFER RECEIVED
+// --------------------------
+socket.on("offer", async ({ sender, offer }) => {
+
+    const peer = createPeer(sender);
+
+    await peer.setRemoteDescription(offer);
+
+    const answer = await peer.createAnswer();
+    await peer.setLocalDescription(answer);
+
+    socket.emit("answer", {
+        target: sender,
+        answer: peer.localDescription
+    });
+
+});
+
+// --------------------------
+// 📩 ANSWER RECEIVED
+// --------------------------
+socket.on("answer", async ({ sender, answer }) => {
+    await peers[sender].setRemoteDescription(answer);
+});
+
+// --------------------------
+// ❄️ ICE CANDIDATE
+// --------------------------
+socket.on("ice-candidate", async ({ sender, candidate }) => {
+    try {
+        await peers[sender].addIceCandidate(candidate);
+    } catch (e) {
+        console.error(e);
+    }
+});
+
+// --------------------------
+// ❌ USER LEFT
+// --------------------------
+socket.on("user-left", userId => {
+
+    if (peers[userId]) {
+        peers[userId].close();
+        delete peers[userId];
+    }
+
+    const video = document.getElementById(userId);
+    if (video) video.remove();
+});
+
+// --------------------------
+// 🎤 MIC TOGGLE
+// --------------------------
+function toggleMic() {
+    localStream.getAudioTracks().forEach(track => {
+        track.enabled = !track.enabled;
+    });
 }
 
-function copyLink() {
-  navigator.clipboard.writeText(window.location.href);
-  alert("Link copied 🔥");
+// --------------------------
+// 📷 CAMERA TOGGLE
+// --------------------------
+function toggleCam() {
+    localStream.getVideoTracks().forEach(track => {
+        track.enabled = !track.enabled;
+    });
 }
+
+// --------------------------
+// 🖥️ SCREEN SHARE
+// --------------------------
+async function shareScreen() {
+
+    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true
+    });
+
+    const screenTrack = screenStream.getVideoTracks()[0];
+
+    for (let id in peers) {
+        const sender = peers[id].getSenders().find(s => s.track.kind === "video");
+        sender.replaceTrack(screenTrack);
+    }
+
+    screenTrack.onended = () => {
+        const videoTrack = localStream.getVideoTracks()[0];
+
+        for (let id in peers) {
+            const sender = peers[id].getSenders().find(s => s.track.kind === "video");
+            sender.replaceTrack(videoTrack);
+        }
+    };
+}
+
+// --------------------------
+// 💬 CHAT
+// --------------------------
+function sendMsg() {
+    const input = document.getElementById("msgInput");
+    const msg = input.value;
+
+    if (!msg) return;
+
+    socket.emit("chat-message", msg);
+    addMsg("Me: " + msg);
+
+    input.value = "";
+}
+
+socket.on("chat-message", ({ sender, message }) => {
+    addMsg(sender + ": " + message);
+});
+
+function addMsg(text) {
+    const div = document.createElement("div");
+    div.innerText = text;
+    document.getElementById("chatBox").appendChild(div);
+}
+
+// --------------------------
+// 📋 COPY ROOM
+// --------------------------
+function copyRoom() {
+    navigator.clipboard.writeText(roomId);
+    alert("Room copied!");
+}
+
+// --------------------------
+// ❌ LEAVE CALL
+// --------------------------
+function leaveCall() {
+    window.location.href = "index.html";
+          }
